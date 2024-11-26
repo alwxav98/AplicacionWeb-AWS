@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v2
+        with:
+          repository: alwxav98/AplicacionWeb-AWS 
 
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
@@ -21,38 +23,24 @@ jobs:
       - name: Deploy to EC2 Server
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.HOST_DNS }} << 'EOF'
-
+           
             sudo apt update -y
-            sudo apt install python3-pip python3-dev apache2 libapache2-mod-wsgi-py3 git -y
+            sudo apt install python3-pip python3-dev apache2 libapache2-mod-wsgi-py3 git python3-venv -y
+
+            cd /var/www/html/
 
             
-            sudo mkdir -p /var/www/html/AWSFlaskApp
-            sudo chown -R ubuntu:ubuntu /var/www/html
+            git pull origin main || git clone https://github.com/alwxav98/AplicacionWeb-AWS.git .
+
+           
+            if [ ! -d "venv" ]; then
+              python3 -m venv venv
+            fi
+
+           
+            source venv/bin/activate
+            pip install -r requirements.txt
 
             
-            sudo rm -rf /var/www/html/AWSFlaskApp/*
-            git clone https://github.com/alwxav98/AplicacionWeb-AWS.git /var/www/html/AWSFlaskApp
-
-            
-            python3 -m venv /var/www/html/AWSFlaskApp/venv
-            source /var/www/html/AWSFlaskApp/venv/bin/activate
-            pip install -r /var/www/html/AWSFlaskApp/requirements.txt
-
-            
-            sudo bash -c 'cat > /etc/apache2/sites-available/AWSFlaskApp.conf <<EOF
-            <VirtualHost *:80>
-                ServerName ${{ secrets.HOST_DNS }}
-                DocumentRoot /var/www/html/AWSFlaskApp
-
-                WSGIDaemonProcess AWSFlaskApp python-path=/var/www/html/AWSFlaskApp/venv/lib/python3.12/site-packages
-                WSGIScriptAlias / /var/www/html/AWSFlaskApp/myapp.wsgi
-
-                <Directory /var/www/html/AWSFlaskApp>
-                    Require all granted
-                </Directory>
-            </VirtualHost>
-            EOF'
-
-            sudo a2ensite AWSFlaskApp
-            sudo systemctl reload apache2
+            sudo systemctl restart apache2
           EOF
