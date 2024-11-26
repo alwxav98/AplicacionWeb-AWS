@@ -20,7 +20,7 @@ jobs:
 
     - name: Deploy to EC2
       run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.NOMBRE_DE_USUARIO }}@${{ secrets.HOST_DNS }} << 'EOF'
+        ssh -o StrictHostKeyChecking=no ${{ secrets.USERNAME }}@${{ secrets.HOST_DNS }} << 'EOF'
           cd ${{ secrets.TARGET_DIR }}
           git pull origin main
           pip install -r requirements.txt
