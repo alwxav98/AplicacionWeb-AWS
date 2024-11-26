@@ -1,8 +1,6 @@
 import sys
-import os
-
-
-sys.path.insert(0, '/home/ubuntu/myapp')  # Cambia a la ruta correcta de tu aplicación
-
-
+import logging
 from app import app as application
+
+logging.basicConfig(stream=sys.stderr)
+sys.path.insert(0, '/var/www/html')
