@@ -8,7 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v2
@@ -23,20 +23,38 @@ jobs:
       - name: Deploy to EC2 Server
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.HOST_DNS }} << 'EOF'
-           
+            
             sudo apt update -y
             sudo apt install python3-pip python3-dev apache2 libapache2-mod-wsgi-py3 git python3-venv -y
 
             cd /var/www/html/
 
             
-            git pull origin main || git clone https://github.com/alwxav98/AplicacionWeb-AWS.git .
-
-           
-            if [ ! -d "venv" ]; then
-              python3 -m venv venv
+            if [ ! -d ".git" ]; then
+              git clone https://github.com/alwxav98/AplicacionWeb-AWS.git .
+            else
+              git pull origin main
             fi
 
+            
+            if [ -f "requirements.txt" ]; then
+              # Crear un entorno virtual si no existe
+              if [ ! -d "venv" ]; then
+                python3 -m venv venv
+              fi
+
+              
+              source venv/bin/activate
+              pip install -r requirements.txt
+            else
+              echo "No se encontró el archivo requirements.txt"
+              exit 1
+            fi
+
+           
+            sudo systemctl restart apache2
+            sudo systemctl status apache2
+          EOF
            
             source venv/bin/activate
             pip install -r requirements.txt
