@@ -1,6 +1,6 @@
-name: Push-to-EC2
+name: Deploy to EC2
 
-# Trigger deployment only on push to main branch
+# Definir el evento que activará el flujo de trabajo (cuando se haga un push al main)
 on:
   push:
     branches:
@@ -8,41 +8,34 @@ on:
 
 jobs:
   deploy:
-    name: Deploy to EC2 on master branch push
     runs-on: ubuntu-latest
-
+    
     steps:
-      - name: Checkout the files
+      - name: Checkout the repository
         uses: actions/checkout@v2
 
-      - name: Deploy to Server 1
-        uses: easingthemes/ssh-deploy@main
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
-          REMOTE_HOST: ${{ secrets.HOST_DNS }}
-          REMOTE_USER: ${{ secrets.USERNAME }}
-          TARGET: ${{ secrets.TARGET_DIR }}
-
-      - name: Executing remote ssh commands using ssh key
-        uses: appleboy/ssh-action@master
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
         with:
-          host: ${{ secrets.HOST_DNS }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: Deploy to EC2 Server
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.HOST_DNS }} << 'EOF'
            
-            sudo apt-get update -y
+            sudo apt update -y
+            sudo apt install python3-pip python3-dev apache2 libapache2-mod-wsgi-py3 git -y
+
+           
+            cd /var/www/html/
 
             
-            sudo apt-get install -y apache2 libapache2-mod-wsgi-py3 python3-pip
+            git pull origin main || git clone https://github.com/tu-usuario/tu-repositorio.git .
 
             
-            cd ${{ secrets.TARGET_DIR }}
-            sudo pip3 install -r requirements.txt  # Si tienes un archivo requirements.txt
+            pip3 install -r /var/www/html/requirements.txt
 
             
-            sudo cp /home/ubuntu/myapp.conf /etc/apache2/sites-available/000-default.conf
-
-            
-            sudo systemctl enable apache2
+            sudo systemctl restart apache2
+          EOF
             sudo systemctl restart apache2
