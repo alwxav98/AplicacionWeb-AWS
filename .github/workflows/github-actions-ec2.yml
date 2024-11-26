@@ -1,6 +1,5 @@
 name: Deploy to EC2
 
-# Definir el evento que activará el flujo de trabajo (cuando se haga un push al main)
 on:
   push:
     branches:
@@ -22,20 +21,32 @@ jobs:
       - name: Deploy to EC2 Server
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.HOST_DNS }} << 'EOF'
-           
+
             sudo apt update -y
             sudo apt install python3-pip python3-dev apache2 libapache2-mod-wsgi-py3 git -y
 
            
-            cd /var/www/html/
-
-            
+            cd /var/www/html/AWSFlaskApp || mkdir -p /var/www/html/AWSFlaskApp && cd /var/www/html/AWSFlaskApp
             git pull origin main || git clone https://github.com/tu-usuario/tu-repositorio.git .
 
-            
-            pip3 install -r /var/www/html/requirements.txt
+           
+            pip3 install -r /var/www/html/AWSFlaskApp/requirements.txt
 
             
-            sudo systemctl restart apache2
+            sudo bash -c 'cat > /etc/apache2/sites-available/AWSFlaskApp.conf <<EOF
+            <VirtualHost *:80>
+                ServerName ${{ secrets.HOST_DNS }}
+                DocumentRoot /var/www/html/AWSFlaskApp
+
+                WSGIDaemonProcess AWSFlaskApp python-path=/var/www/html/AWSFlaskApp
+                WSGIScriptAlias / /var/www/html/AWSFlaskApp/myapp.wsgi
+
+                <Directory /var/www/html/AWSFlaskApp>
+                    Require all granted
+                </Directory>
+            </VirtualHost>
+            EOF'
+
+            sudo a2ensite AWSFlaskApp
+            sudo systemctl reload apache2
           EOF
-            sudo systemctl restart apache2
