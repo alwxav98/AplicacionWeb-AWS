@@ -25,12 +25,18 @@ jobs:
             sudo apt update -y
             sudo apt install python3-pip python3-dev apache2 libapache2-mod-wsgi-py3 git -y
 
-           
-            cd /var/www/html/AWSFlaskApp || mkdir -p /var/www/html/AWSFlaskApp && cd /var/www/html/AWSFlaskApp
-            git pull origin main || git clone https://github.com/tu-usuario/tu-repositorio.git .
+            
+            sudo mkdir -p /var/www/html/AWSFlaskApp
+            sudo chown -R ubuntu:ubuntu /var/www/html
 
-           
-            pip3 install -r /var/www/html/AWSFlaskApp/requirements.txt
+            
+            sudo rm -rf /var/www/html/AWSFlaskApp/*
+            git clone https://github.com/tu-usuario/tu-repositorio.git /var/www/html/AWSFlaskApp
+
+            
+            python3 -m venv /var/www/html/AWSFlaskApp/venv
+            source /var/www/html/AWSFlaskApp/venv/bin/activate
+            pip install -r /var/www/html/AWSFlaskApp/requirements.txt
 
             
             sudo bash -c 'cat > /etc/apache2/sites-available/AWSFlaskApp.conf <<EOF
@@ -38,7 +44,7 @@ jobs:
                 ServerName ${{ secrets.HOST_DNS }}
                 DocumentRoot /var/www/html/AWSFlaskApp
 
-                WSGIDaemonProcess AWSFlaskApp python-path=/var/www/html/AWSFlaskApp
+                WSGIDaemonProcess AWSFlaskApp python-path=/var/www/html/AWSFlaskApp/venv/lib/python3.12/site-packages
                 WSGIScriptAlias / /var/www/html/AWSFlaskApp/myapp.wsgi
 
                 <Directory /var/www/html/AWSFlaskApp>
