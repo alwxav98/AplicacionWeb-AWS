@@ -1,5 +1,6 @@
-name: Deploy to EC2
+name: Push-to-EC2
 
+# Trigger deployment only on push to main branch
 on:
   push:
     branches:
@@ -7,34 +8,44 @@ on:
 
 jobs:
   deploy:
+    name: Deploy to EC2 on master branch push
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout the repository
+        uses: actions/checkout@v2
 
-    - name: Set up SSH
-      uses: webfactory/ssh-agent@v0.5.3
-      with:
-        ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
-    - name: Deploy to EC2
-      run: |
-        ssh -o StrictHostKeyChecking=no -i ${{ secrets.EC2_SSH_KEY }} ${{ secrets.NOMBRE_DE_USUARIO }}@${{ secrets.HOST_DNS }} << 'EOF'
-          cd ${{ secrets.TARGET_DIR }}
+      - name: Deploy to EC2 Server
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.USERNAME }}@${{ secrets.HOST_DNS }} << 'EOF'
+            # Actualizar e instalar dependencias
+            sudo apt-get -y update
+            sudo apt-get install -y apache2 python3-venv python3-pip git
 
-          
-          git remote set-url origin git@github.com:alwxav98/AplicacionWeb-AWS.git
-          
-          git pull origin main
+            # Navegar a la carpeta donde quieres desplegar el código
+            cd ${{ secrets.TARGET_DIR }}
 
-          
-          python3 -m venv venv
-          source venv/bin/activate
+            # Asegúrate de que el repositorio se actualice
+            git remote set-url origin git@github.com:alwxav98/AplicacionWeb-AWS.git
+            git pull origin main
 
-          
-          pip install -r requirements.txt
+            # Crear un entorno virtual y activar
+            python3 -m venv venv
+            source venv/bin/activate
 
-          
-          sudo systemctl restart apache2
-        EOF
+            # Instalar dependencias del archivo requirements.txt
+            pip install -r requirements.txt
+
+            # Reiniciar Apache
+            sudo systemctl restart apache2
+          EOF
+
+      - name: Clean up
+        run: |
+          # Limpiar caché o realizar tareas de limpieza si es necesario
+          echo "Deployment completed successfully!"
