@@ -10,51 +10,38 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v2
-        with:
-          repository: alwxav98/AplicacionWeb-AWS 
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+    - name: SSH to EC2 and update the app
+      run: |
+        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+         
+          cd /path/to/your/app
 
-      - name: Deploy to EC2 Server
-        run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.HOST_DNS }} << 'EOF'
-            
-            sudo apt update -y
-            sudo apt install python3-pip python3-dev apache2 libapache2-mod-wsgi-py3 git python3-venv -y
+          
+          git pull origin main
 
-            cd /var/www/html/
+          
+          if [ ! -f "requirements.txt" ]; then
+            echo "requirements.txt no encontrado"
+            exit 1
+          fi
 
-            
-            if [ ! -d ".git" ]; then
-              git clone https://github.com/alwxav98/AplicacionWeb-AWS.git .
-            else
-              git pull origin main
-            fi
+          
+          if [ ! -d "venv" ]; then
+            python3 -m venv venv
+          fi
 
-            
-            if [ -f "requirements.txt" ]; then
-              # Crear un entorno virtual si no existe
-              if [ ! -d "venv" ]; then
-                python3 -m venv venv
-              fi
+          
+          source venv/bin/activate
 
-              
-              source venv/bin/activate
-              pip install -r requirements.txt
-            else
-              echo "No se encontró el archivo requirements.txt"
-              exit 1
-            fi
+         
+          pip install -r requirements.txt
 
-           
-            sudo systemctl restart apache2
-            sudo systemctl status apache2
-          EOF
+          
+          sudo systemctl restart apache2
+        EOF
            
             source venv/bin/activate
             pip install -r requirements.txt
