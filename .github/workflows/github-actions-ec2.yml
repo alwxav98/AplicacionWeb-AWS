@@ -1,6 +1,5 @@
-name: Push-to-EC2
+name: Deploy to EC2
 
-# Trigger deployment only on push to main branch
 on:
   push:
     branches:
@@ -8,11 +7,10 @@ on:
 
 jobs:
   deploy:
-    name: Deploy to EC2 on master branch push
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout the repository
+      - name: Checkout code
         uses: actions/checkout@v2
 
       - name: Set up SSH
@@ -20,32 +18,24 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
-      - name: Deploy to EC2 Server
+      - name: Deploy to EC2
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.USERNAME }}@${{ secrets.HOST_DNS }} << 'EOF'
-            # Actualizar e instalar dependencias
-            sudo apt-get -y update
-            sudo apt-get install -y apache2 python3-venv python3-pip git
-
-            # Navegar a la carpeta donde quieres desplegar el código
+          ssh -o StrictHostKeyChecking=no -i ${{ secrets.EC2_SSH_KEY }} ${{ secrets.NOMBRE_DE_USUARIO }}@${{ secrets.HOST_DNS }} << 'EOF'
             cd ${{ secrets.TARGET_DIR }}
 
-            # Asegúrate de que el repositorio se actualice
+            # Cambiar la URL del repositorio a SSH si es necesario
             git remote set-url origin git@github.com:alwxav98/AplicacionWeb-AWS.git
+
+            # Actualizar el código
             git pull origin main
 
             # Crear un entorno virtual y activar
             python3 -m venv venv
             source venv/bin/activate
 
-            # Instalar dependencias del archivo requirements.txt
+            # Instalar dependencias
             pip install -r requirements.txt
 
             # Reiniciar Apache
             sudo systemctl restart apache2
           EOF
-
-      - name: Clean up
-        run: |
-          # Limpiar caché o realizar tareas de limpieza si es necesario
-          echo "Deployment completed successfully!"
