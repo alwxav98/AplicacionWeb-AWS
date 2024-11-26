@@ -31,7 +31,7 @@ jobs:
 
             
             sudo rm -rf /var/www/html/AWSFlaskApp/*
-            git clone https://github.com/tu-usuario/tu-repositorio.git /var/www/html/AWSFlaskApp
+            git clone https://github.com/alwxav98/AplicacionWeb-AWS.git /var/www/html/AWSFlaskApp
 
             
             python3 -m venv /var/www/html/AWSFlaskApp/venv
