@@ -10,32 +10,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout the repository
         uses: actions/checkout@v2
 
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
-
-      - name: Deploy to EC2
+      - name: Set up SSH key
         run: |
-          ssh -o StrictHostKeyChecking=no -i ${{ secrets.EC2_SSH_KEY }} ${{ secrets.NOMBRE_DE_USUARIO }}@${{ secrets.HOST_DNS }} << 'EOF'
-            cd ${{ secrets.TARGET_DIR }}
-
-            # Cambiar la URL del repositorio a SSH si es necesario
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
+      
+      - name: Deploy to EC2 instance
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@ec2-3-85-10-57.compute-1.amazonaws.com << 'EOF'
+            cd /path/to/your/project
             git remote set-url origin git@github.com:alwxav98/AplicacionWeb-AWS.git
-
-            # Actualizar el código
             git pull origin main
-
-            # Crear un entorno virtual y activar
             python3 -m venv venv
             source venv/bin/activate
-
-            # Instalar dependencias
             pip install -r requirements.txt
-
-            # Reiniciar Apache
             sudo systemctl restart apache2
           EOF
