@@ -13,39 +13,16 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: SSH to EC2 and update the app
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+    - name: Deploy to EC2
       run: |
-        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
-         
-          cd /path/to/your/app
-
-          
+        ssh -o StrictHostKeyChecking=no ${{ secrets.NOMBRE_DE_USUARIO }}@${{ secrets.HOST_DNS }} << 'EOF'
+          cd ${{ secrets.TARGET_DIR }}
           git pull origin main
-
-          
-          if [ ! -f "requirements.txt" ]; then
-            echo "requirements.txt no encontrado"
-            exit 1
-          fi
-
-          
-          if [ ! -d "venv" ]; then
-            python3 -m venv venv
-          fi
-
-          
-          source venv/bin/activate
-
-         
           pip install -r requirements.txt
-
-          
           sudo systemctl restart apache2
         EOF
-           
-            source venv/bin/activate
-            pip install -r requirements.txt
-
-            
-            sudo systemctl restart apache2
-          EOF
